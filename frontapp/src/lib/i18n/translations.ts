@@ -26,6 +26,7 @@ export const translations = {
     },
     nav: {
       home: '首页',
+      inspiration: '灵感库',
       analyze: '风格提取',
       compare: '对比',
       library: '素材库',
@@ -198,6 +199,7 @@ export const translations = {
       tertiaryColor: '第三色',
       neutralColor: '中性色',
       handPickedStyle: '精选风格',
+      copyDesignMd: '复制 DESIGN.md',
     },
   },
   en: {
@@ -223,6 +225,7 @@ export const translations = {
     },
     nav: {
       home: 'Home',
+      inspiration: 'Inspiration',
       analyze: 'Analyze',
       compare: 'Compare',
       library: 'Library',
@@ -395,6 +398,7 @@ export const translations = {
       tertiaryColor: 'Tertiary',
       neutralColor: 'Neutral',
       handPickedStyle: 'Hand-picked Style',
+      copyDesignMd: 'Copy DESIGN.md',
     },
   },
 };

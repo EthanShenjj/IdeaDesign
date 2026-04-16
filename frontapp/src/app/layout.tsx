@@ -4,6 +4,7 @@ import './globals.css';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import Header from '@/components/Header';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { ToastProvider } from '@/components/Toast';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -50,10 +51,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${plusJakarta.variable} ${gochiHand.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable} antialiased`}>
         <ErrorBoundary>
-          <LanguageProvider>
-            <Header />
-            {children}
-          </LanguageProvider>
+          <ToastProvider>
+            <LanguageProvider>
+              <Header />
+              {children}
+            </LanguageProvider>
+          </ToastProvider>
         </ErrorBoundary>
       </body>
     </html>

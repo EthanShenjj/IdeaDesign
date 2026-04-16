@@ -56,6 +56,7 @@ export default function Header() {
       <nav className="hidden md:flex items-center gap-8">
         {[
           { name: t('nav.home') || '首页', path: '/' },
+          { name: t('nav.inspiration') || '灵感库', path: '/inspiration' },
           { name: t('nav.analyze') || '风格提取', path: '/analyze' },
           { name: t('nav.compare') || '对比', path: '/compare' },
           { name: t('nav.library') || '素材库', path: '/library' },
@@ -77,17 +78,19 @@ export default function Header() {
 
       <div className="flex items-center gap-4">
         {/* Language Switcher */}
-        <div className="flex items-center gap-2 bg-white rounded-full p-1 shadow-sm">
-          <button 
+        <div className="flex items-center gap-2 bg-white rounded-full p-1 shadow-sm" role="group" aria-label="Language switcher">
+          <button
             onClick={() => setLanguage('zh')}
+            aria-pressed={language === 'zh'}
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
               language === 'zh' ? 'bg-ink text-white' : 'text-ink/40 hover:text-ink'
             }`}
           >
             {t('common.chinese')}
           </button>
-          <button 
+          <button
             onClick={() => setLanguage('en')}
+            aria-pressed={language === 'en'}
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
               language === 'en' ? 'bg-ink text-white' : 'text-ink/40 hover:text-ink'
             }`}
@@ -96,15 +99,17 @@ export default function Header() {
           </button>
         </div>
 
-        <Link 
+        <Link
           href="/library"
           className="p-2 rounded-full hover:bg-black/5 transition-colors"
+          aria-label={t('nav.library') || 'Library'}
         >
           <LibraryIcon className="w-5 h-5 text-ink/70" />
         </Link>
-        <Link 
+        <Link
           href="/settings"
           className="p-2 rounded-full hover:bg-black/5 transition-colors"
+          aria-label={t('nav.settings') || 'Settings'}
         >
           <SettingsIcon className="w-5 h-5 text-ink/70" />
         </Link>
@@ -114,6 +119,8 @@ export default function Header() {
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="w-10 h-10 rounded-full bg-tertiary flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-sm hover:border-accent transition-all cursor-pointer"
+            aria-label={t('auth.logout') || 'User menu'}
+            aria-expanded={showUserMenu}
           >
             {getUserInitial()}
           </button>

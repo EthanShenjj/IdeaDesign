@@ -43,7 +43,7 @@ export interface AnalysisData {
 
 export interface AnalysisResult {
   colors: ColorData[];
-  analysis: any;
+  analysis: AnalysisData | Record<string, unknown>;
   prompt: string;
   tags: string[];
 }
@@ -55,7 +55,7 @@ export interface Asset {
   prompt: string;
   colors: ColorData[];
   tags: string[];
-  analysis?: any;
+  analysis?: AnalysisData | Record<string, unknown>;
   created_at: string;
   updated_at?: string;
 }
@@ -77,7 +77,7 @@ export interface HistoryItem {
   tags: string[];
   colors: ColorData[];
   prompt: string;
-  analysis?: any;
+  analysis?: AnalysisData | Record<string, unknown>;
   created_at?: string;
   updated_at?: string;
   is_saved?: boolean;  // 是否已收藏

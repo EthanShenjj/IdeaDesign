@@ -6,11 +6,13 @@ import { Upload, Sparkles, Copy, Check, Save, Image as ImageIcon } from 'lucide-
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { saveAsset as saveAssetToAPI, extractColors, analyzeImage as analyzeImageFromAPI, getFullUrl, saveToHistory } from '@/lib/api';
 import BackgroundLights from '@/components/BackgroundLights';
+import { useToast } from '@/components/Toast';
 import type { AnalysisResult, ModelConfig } from '@/types';
 
 export default function AnalyzePage() {
   const router = useRouter();
   const { t, language } = useLanguage();
+  const { showToast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [imageUrl, setImageUrl] = useState('');
@@ -110,12 +112,12 @@ export default function AnalyzePage() {
 
   const analyzeImage = async () => {
     if (!selectedModel) {
-      alert(t('analyze.configureModel'));
+      showToast(t('analyze.configureModel'), 'error');
       return;
     }
 
     if (!imageFile && !imageUrl) {
-      alert(t('analyze.provideImage'));
+      showToast(t('analyze.provideImage'), 'error');
       return;
     }
 
@@ -238,15 +240,15 @@ export default function AnalyzePage() {
         }
       } catch (backendError) {
         console.error('Failed to save to backend:', backendError);
-        alert(t('analyze.saveFailed') || 'Failed to save analysis');
+        showToast(t('analyze.saveFailed') || 'Failed to save analysis', 'error');
       }
 
     } catch (error: any) {
       const errorMessage = error.message || String(error);
       if (errorMessage.includes('大模型加载超时') || errorMessage.includes('timeout')) {
-        alert(t('analyze.modelTimeout'));
+        showToast(t('analyze.modelTimeout'), 'error');
       } else {
-        alert(`${t('analyze.analysisFailed')}: ${errorMessage}`);
+        showToast(`${t('analyze.analysisFailed')}: ${errorMessage}`, 'error');
       }
     } finally {
       setIsAnalyzing(false);
@@ -413,15 +415,15 @@ export default function AnalyzePage() {
 
     try {
       const response = await saveAssetToAPI(asset);
-      
+
       if (response.success) {
-        alert(t('analyze.assetSaved'));
+        showToast(t('analyze.assetSaved'), 'success');
       } else {
         throw new Error('API save failed');
       }
     } catch (error) {
       console.error('Failed to save asset:', error);
-      alert(t('analyze.saveFailed') || 'Failed to save asset');
+      showToast(t('analyze.saveFailed') || 'Failed to save asset', 'error');
     }
   };
 

@@ -7,10 +7,12 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { getAssets, saveAsset as saveAssetToAPI, getHistory, extractColors, analyzeImage as analyzeImageFromAPI, saveToHistory, getFullUrl } from '@/lib/api';
 import BackgroundLights from '@/components/BackgroundLights';
+import { useToast } from '@/components/Toast';
 import type { HistoryItem, ModelConfig } from '@/types';
 
 export default function HomePage() {
   const { t, language } = useLanguage();
+  const { showToast } = useToast();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -187,7 +189,7 @@ export default function HomePage() {
     if (!imageFile && !searchQuery) return;
     
     if (imageFile && !selectedModel) {
-      alert(t('analyze.configureModel'));
+      showToast(t('analyze.configureModel'), 'error');
       return;
     }
 
@@ -257,14 +259,14 @@ export default function HomePage() {
           }
         } catch (backendError) {
           console.error('Failed to save to history:', backendError);
-          alert('Failed to save analysis');
+          showToast('Failed to save analysis', 'error');
         }
       } catch (error: any) {
         const errorMessage = error.message || String(error);
         if (errorMessage.includes('大模型加载超时') || errorMessage.includes('timeout')) {
-          alert(t('analyze.modelTimeout'));
+          showToast(t('analyze.modelTimeout'), 'error');
         } else {
-          alert(`${t('analyze.analysisFailed')}: ${errorMessage}`);
+          showToast(`${t('analyze.analysisFailed')}: ${errorMessage}`, 'error');
         }
       } finally {
         setIsAnalyzing(false);
@@ -361,6 +363,7 @@ export default function HomePage() {
                 <button
                   onClick={clearImage}
                   className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-all shadow-lg"
+                  aria-label={t('common.delete') || 'Delete'}
                 >
                   <X className="w-4 h-4 text-ink" />
                 </button>

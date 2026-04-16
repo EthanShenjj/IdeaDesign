@@ -5,12 +5,41 @@
 import type { ColorData, AnalysisData, Asset, ModelConfig } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const DEFAULT_TIMEOUT = 60000; // 60 seconds
+
+/**
+ * 带超时的 fetch 包装函数
+ */
+async function fetchWithTimeout(
+  url: string,
+  options?: RequestInit & { timeout?: number }
+): Promise<Response> {
+  const { timeout = DEFAULT_TIMEOUT, ...fetchOptions } = options || {};
+
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw error;
+  }
+}
 
 /**
  * 健康检查
  */
 export async function healthCheck(): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/health`);
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/health`, { timeout: 5000 });
   return response.json();
 }
 
@@ -42,9 +71,10 @@ export async function extractColors(
     throw new Error('Either imageFile or imageUrl must be provided');
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/extract-colors`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/extract-colors`, {
     method: 'POST',
-    body: formData
+    body: formData,
+    timeout: 30000
   });
 
   if (!response.ok) {
@@ -87,9 +117,10 @@ export async function analyzeImage(
   formData.append('model_name', modelConfig.name);
   formData.append('language', language);
 
-  const response = await fetch(`${API_BASE_URL}/api/analyze`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/analyze`, {
     method: 'POST',
-    body: formData
+    body: formData,
+    timeout: 120000
   });
 
   if (!response.ok) {
@@ -111,7 +142,7 @@ export async function generateImage(
     n?: number;
   }
 ): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/generate`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -148,7 +179,7 @@ export async function getAssets(filters?: {
   if (filters?.color) params.append('color', filters.color);
   if (filters?.limit) params.append('limit', filters.limit.toString());
 
-  const response = await fetch(`${API_BASE_URL}/api/assets?${params}`);
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/assets?${params}`, { timeout: 10000 });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch assets: ${response.statusText}`);
@@ -161,7 +192,7 @@ export async function getAssets(filters?: {
  * 根据 ID 获取单个素材/分析结果
  */
 export async function getAssetById(assetId: string): Promise<{ success: boolean; asset: Asset }> {
-  const response = await fetch(`${API_BASE_URL}/api/assets?id=${assetId}`);
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/assets?id=${assetId}`, { timeout: 10000 });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch asset: ${response.statusText}`);
@@ -174,7 +205,7 @@ export async function getAssetById(assetId: string): Promise<{ success: boolean;
  * 保存素材
  */
 export async function saveAsset(asset: Omit<Asset, 'id' | 'created_at'>): Promise<{ success: boolean; asset_id: string }> {
-  const response = await fetch(`${API_BASE_URL}/api/assets`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/assets`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -193,7 +224,7 @@ export async function saveAsset(asset: Omit<Asset, 'id' | 'created_at'>): Promis
  * 删除素材
  */
 export async function deleteAsset(assetId: string): Promise<{ success: boolean }> {
-  const response = await fetch(`${API_BASE_URL}/api/assets?id=${assetId}`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/assets?id=${assetId}`, {
     method: 'DELETE'
   });
 
@@ -220,7 +251,7 @@ export async function compareModels(
     base_url: m.baseUrl
   }));
 
-  const response = await fetch(`${API_BASE_URL}/api/compare-models`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/compare-models`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -255,7 +286,7 @@ export async function getHistory(filters?: {
   if (filters?.limit) params.append('limit', filters.limit.toString());
   if (filters?.id) params.append('id', filters.id);
 
-  const response = await fetch(`${API_BASE_URL}/api/history?${params}`);
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/history?${params}`, { timeout: 10000 });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch history: ${response.statusText}`);
@@ -268,7 +299,7 @@ export async function getHistory(filters?: {
  * 删除历史记录
  */
 export async function deleteHistory(historyId: string): Promise<{ success: boolean }> {
-  const response = await fetch(`${API_BASE_URL}/api/history?id=${historyId}`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/history?id=${historyId}`, {
     method: 'DELETE'
   });
 
@@ -290,7 +321,7 @@ export async function saveToHistory(data: {
   tags: string[];
   analysis: any;
 }): Promise<{ success: boolean; history_id: string }> {
-  const response = await fetch(`${API_BASE_URL}/api/history`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/history`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -304,7 +335,7 @@ export async function saveToHistory(data: {
  * 收藏历史记录
  */
 export async function saveHistoryToLibrary(historyId: string): Promise<{ success: boolean; asset_id: string }> {
-  const response = await fetch(`${API_BASE_URL}/api/history/${historyId}/save`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/history/${historyId}/save`, {
     method: 'POST'
   });
 
@@ -319,7 +350,7 @@ export async function saveHistoryToLibrary(historyId: string): Promise<{ success
  * 取消收藏历史记录
  */
 export async function unsaveHistoryFromLibrary(historyId: string): Promise<{ success: boolean }> {
-  const response = await fetch(`${API_BASE_URL}/api/history/${historyId}/unsave`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/history/${historyId}/unsave`, {
     method: 'POST'
   });
 
@@ -337,7 +368,7 @@ export async function register(
   username: string,
   password: string
 ): Promise<{ success: boolean; user?: any; error?: string }> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/auth/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -361,7 +392,7 @@ export async function login(
   username: string,
   password: string
 ): Promise<{ success: boolean; user?: any; error?: string }> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -378,30 +409,9 @@ export async function login(
   return data;
 }
 
-/**
- * 从 localStorage 获取模型配置
- */
-export function getStoredModels(): ModelConfig[] {
-  if (typeof window === 'undefined') return [];
-  const saved = localStorage.getItem('ai_models');
-  return saved ? JSON.parse(saved) : [];
-}
-
-/**
- * 保存模型配置到 localStorage
- */
-export function saveModels(models: ModelConfig[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('ai_models', JSON.stringify(models));
-}
-
-/**
- * 获取第一个可用的模型
- */
-export function getDefaultModel(): ModelConfig | null {
-  const models = getStoredModels();
-  return models.find(m => m.enabled && m.apiKey) || null;
-}
+// Note: Model storage functions have been moved to hooks/useModels.ts
+// Re-exporting for backward compatibility
+export { getStoredModels, saveModels, getDefaultModel } from '@/hooks/useModels';
 
 /**
  * 获取当前登录用户

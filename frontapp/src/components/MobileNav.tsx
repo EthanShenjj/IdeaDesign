@@ -13,6 +13,7 @@ export default function MobileNav() {
   const { t } = useLanguage();
 
   const navItems = [
+    { name: t('nav.inspiration') || '灵感库', path: '/inspiration', icon: Sparkles },
     { name: t('nav.analyze'), path: '/analyze', icon: Sparkles },
     { name: t('nav.compare'), path: '/compare', icon: BarChart3 },
     { name: t('nav.library'), path: '/library', icon: Library },
