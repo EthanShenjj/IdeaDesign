@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Search, Grid, List } from 'lucide-react';
 import BackgroundLights from '@/components/BackgroundLights';
-import designsData from '@/data/designs.json';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getDesigns } from '@/lib/api';
 
 export default function InspirationPage() {
   const router = useRouter();
@@ -13,8 +13,32 @@ export default function InspirationPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [designs, setDesigns] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [allTags, setAllTags] = useState<string[]>([]);
 
-  const filteredAssets = designsData.filter(asset => {
+  useEffect(() => {
+    const fetchDesigns = async () => {
+      setIsLoading(true);
+      try {
+        const response = await getDesigns();
+        if (response.success) {
+          setDesigns(response.designs);
+          // 提取所有标签
+          const tags = Array.from(new Set(response.designs.flatMap((a: any) => a.categoryLabelZh).filter(Boolean))) as string[];
+          setAllTags(tags);
+        }
+      } catch (err) {
+        console.error('Failed to fetch designs:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDesigns();
+  }, []);
+
+  const filteredAssets = designs.filter(asset => {
     const matchesSearch = !searchQuery || 
       asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (asset.summary || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -23,8 +47,6 @@ export default function InspirationPage() {
     
     return matchesSearch && matchesTag;
   });
-
-  const allTags = Array.from(new Set(designsData.flatMap(a => a.categoryLabelZh).filter(Boolean)));
 
   return (
     <div className="min-h-screen bg-canvas pt-24 pb-20 px-6">
@@ -102,7 +124,12 @@ export default function InspirationPage() {
           )}
         </div>
 
-        {filteredAssets.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-10 h-10 border-4 border-tertiary/20 border-t-tertiary rounded-full animate-spin mb-4" />
+            <p className="text-ink/40">{t('common.loading')}</p>
+          </div>
+        ) : filteredAssets.length === 0 ? (
           <div className="text-center py-20">
             <Sparkles className="w-16 h-16 text-ink/20 mx-auto mb-4" />
             <h3 className="font-headline font-bold text-xl text-ink/40 mb-2">No Inspiration Found</h3>

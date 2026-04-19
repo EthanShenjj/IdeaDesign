@@ -431,6 +431,35 @@ export function logout(): void {
 }
 
 /**
+ * 获取设计灵感列表
+ */
+export async function getDesigns(filters?: {
+  search?: string;
+  category?: string;
+}): Promise<{ success: boolean; designs: any[]; count: number }> {
+  const params = new URLSearchParams();
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.category) params.append('category', filters.category);
+
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/designs?${params}`, { timeout: 10000 });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch designs: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * 根据 slug 获取设计详情
+ */
+export async function getDesignBySlug(slug: string): Promise<{ success: boolean; design: any }> {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/designs/${slug}`, { timeout: 10000 });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch design detail: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
  * 检查是否已登录
  */
 export function isAuthenticated(): boolean {

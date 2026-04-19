@@ -734,6 +734,63 @@ def compare_models():
         return jsonify({'error': str(e)}), 500
 
 
+
+@app.route('/api/designs', methods=['GET'])
+def get_designs():
+    """获取所有设计灵感"""
+    try:
+        data_path = os.path.join(os.path.dirname(__file__), 'data', 'designs.json')
+        if not os.path.exists(data_path):
+            return jsonify({'error': 'Designs data not found'}), 404
+        
+        import json
+        with open(data_path, 'r', encoding='utf-8') as f:
+            designs = json.load(f)
+            
+        # 支持分页和搜索
+        search = request.args.get('search', '').lower()
+        category = request.args.get('category', '')
+        
+        if search:
+            designs = [d for d in designs if search in d.get('name', '').lower() or search in d.get('summary', '').lower()]
+            
+        if category:
+            designs = [d for d in designs if category in [d.get('categoryLabelZh'), d.get('categoryLabelEn')]]
+            
+        return jsonify({
+            'success': True,
+            'designs': designs,
+            'count': len(designs)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/designs/<slug>', methods=['GET'])
+def get_design_by_slug(slug):
+    """根据 slug 获取单个设计详情"""
+    try:
+        data_path = os.path.join(os.path.dirname(__file__), 'data', 'designs.json')
+        if not os.path.exists(data_path):
+            return jsonify({'error': 'Designs data not found'}), 404
+            
+        import json
+        with open(data_path, 'r', encoding='utf-8') as f:
+            designs = json.load(f)
+            
+        design = next((d for d in designs if d.get('slug') == slug), None)
+        
+        if design:
+            return jsonify({
+                'success': True,
+                'design': design
+            })
+        else:
+            return jsonify({'error': 'Design not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
