@@ -143,7 +143,7 @@ export default function InspirationPage() {
                 onClick={() => router.push(`/inspiration/${asset.slug}`)}
               >
                 <div className="flex -space-x-1.5 mb-3">
-                  {(asset.colors || []).slice(0, 4).map((color, i) => (
+                  {(asset.colors || []).slice(0, 4).map((color: string, i: number) => (
                     <div
                       key={i}
                       className="w-5 h-5 rounded-full border-2 border-white shadow-sm flex-shrink-0"
@@ -178,7 +178,7 @@ export default function InspirationPage() {
               >
                 <div className="flex items-center gap-4">
                   <div className="flex gap-1.5">
-                    {(asset.colors || []).slice(0, 3).map((color, i) => (
+                    {(asset.colors || []).slice(0, 3).map((color: string, i: number) => (
                       <div
                         key={i}
                         className="w-4 h-4 rounded-full shadow-sm"

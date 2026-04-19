@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Plus, Trash2, Check, X, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import BackgroundLights from '@/components/BackgroundLights';

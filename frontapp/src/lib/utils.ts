@@ -8,7 +8,7 @@ import type { AnalysisData, ColorData } from '@/types';
  * 从分析结果生成 Prompt
  */
 export function generatePromptFromAnalysis(analysis: AnalysisData, colors: ColorData[]): string {
-  const parsed = analysis.parsed;
+  const parsed = analysis.parsed || {};
   const parts = [];
 
   if (parsed.composition) parts.push(parsed.composition.split('.')[0]);

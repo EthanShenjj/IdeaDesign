@@ -100,7 +100,8 @@ export async function analyzeImage(
     model?: string;
     success?: boolean;
   }; 
-  image_url?: string 
+  image_url?: string;
+  source_url?: string;
 }> {
   const formData = new FormData();
   

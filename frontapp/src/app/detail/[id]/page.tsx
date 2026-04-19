@@ -302,8 +302,8 @@ export default function DetailPage() {
               {/* AI Color Scheme Description */}
               {(() => {
                 const colorDesc = 
-                  result.analysis?.colors?.color_description || 
-                  result.analysis?.parsed?.color_description;
+                  (result.analysis?.colors as any)?.color_description || 
+                  (result.analysis?.parsed as any)?.color_description;
                 
                 if (!colorDesc) return null;
                 

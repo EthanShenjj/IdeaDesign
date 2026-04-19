@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Library as LibraryIcon, Search, Grid, List, Trash2, Download, Copy, Check, Clock, Bookmark, X, Save } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -8,7 +8,7 @@ import BackgroundLights from '@/components/BackgroundLights';
 import { getAssets, getHistory, deleteAsset as deleteAssetFromAPI, deleteHistory, saveHistoryToLibrary, unsaveHistoryFromLibrary, getFullUrl } from '@/lib/api';
 import type { Asset, HistoryItem } from '@/types';
 
-export default function LibraryPage() {
+function LibraryContent() {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -370,7 +370,7 @@ export default function LibraryPage() {
                         
                         // 如果有 style_name，使用它
                         if (styleName && styleName.trim()) {
-                          return styleName;
+                           return styleName;
                         }
                         
                         // 如果 title 不是时间戳格式（不包含默认前缀或日期格式），使用 title
@@ -704,5 +704,20 @@ export default function LibraryPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function LibraryPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 bg-black/5 rounded-full" />
+          <div className="h-4 w-24 bg-black/5 rounded-full" />
+        </div>
+      </div>
+    }>
+      <LibraryContent />
+    </Suspense>
   );
 }

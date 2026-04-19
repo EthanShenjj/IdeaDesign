@@ -17,7 +17,25 @@ export interface ColorClassification {
 }
 
 export interface AnalysisData {
-  style: {
+  raw_text?: string;
+  parsed?: {
+    style_name?: string;
+    project_name?: string;
+    ai_prompt?: string;
+    style_tags?: string;
+    composition?: string;
+    art_style?: string;
+    lighting?: string;
+    mood?: string;
+    medium?: string;
+    technical?: string;
+    elements?: string;
+    color_description?: string;
+    color_palette?: string;
+    color_classification?: ColorClassification | Record<string, any>;
+    [key: string]: any;
+  };
+  style?: {
     composition: string;
     art_style: string;
     lighting: string;
@@ -26,24 +44,28 @@ export interface AnalysisData {
     technical: string;
     elements: string;
   };
-  colors: {
+  colors?: {
     color_palette: string;
-    color_classification?: ColorClassification;
+    color_classification?: ColorClassification | Record<string, any>;
+    color_description?: string;
   };
-  prompt: {
+  prompt?: {
     ai_prompt: string;
     style_tags: string;
     style_name: string;
   };
-  metadata: {
+  metadata?: {
     model: string;
     success: boolean;
   };
+  model?: string;
+  success?: boolean;
+  [key: string]: any;
 }
 
 export interface AnalysisResult {
   colors: ColorData[];
-  analysis: AnalysisData | Record<string, unknown>;
+  analysis: AnalysisData;
   prompt: string;
   tags: string[];
 }
@@ -55,7 +77,7 @@ export interface Asset {
   prompt: string;
   colors: ColorData[];
   tags: string[];
-  analysis?: AnalysisData | Record<string, unknown>;
+  analysis?: AnalysisData;
   created_at: string;
   updated_at?: string;
 }
@@ -77,7 +99,7 @@ export interface HistoryItem {
   tags: string[];
   colors: ColorData[];
   prompt: string;
-  analysis?: AnalysisData | Record<string, unknown>;
+  analysis?: AnalysisData;
   created_at?: string;
   updated_at?: string;
   is_saved?: boolean;  // 是否已收藏

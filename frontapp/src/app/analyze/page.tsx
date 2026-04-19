@@ -69,7 +69,7 @@ export default function AnalyzePage() {
   };
 
   const generateTitleFromAnalysis = (analysis: any) => {
-    const parsed = analysis.parsed;
+    const parsed = analysis.parsed || {};
     
     // 尝试从不同字段提取关键词来生成标题
     const titleParts = [];
@@ -155,20 +155,20 @@ export default function AnalyzePage() {
       let tags = [];
       if (analysisData.analysis?.parsed?.style_tags) {
         // 解析 AI 返回的标签（可能是逗号分隔的字符串）
-        tags = analysisData.analysis.parsed.style_tags
+        tags = analysisData.analysis.parsed?.style_tags
           .split(/[,，、]/)
           .map((tag: string) => tag.trim())
           .filter((tag: string) => tag.length > 0)
-          .slice(0, 8);
+          .slice(0, 8) || [];
       } else {
         tags = extractTags(analysisData.analysis);
       }
       
       // 优先使用 AI 生成的风格名称，如果没有则生成
       const title = analysisData.analysis?.parsed?.style_name
-        ? analysisData.analysis.parsed.style_name.trim()
+        ? (analysisData.analysis.parsed.style_name || "").trim()
         : (analysisData.analysis?.parsed?.project_name
-          ? analysisData.analysis.parsed.project_name.trim()
+          ? (analysisData.analysis.parsed.project_name || "").trim()
           : generateTitleFromAnalysis(analysisData.analysis));
 
       setResult({
@@ -256,7 +256,7 @@ export default function AnalyzePage() {
   };
 
   const generatePromptFromAnalysis = (analysis: any, colors: any[]) => {
-    const parsed = analysis.parsed;
+    const parsed = analysis.parsed || {};
     const parts = [];
 
     // 提取主要描述元素
@@ -365,15 +365,15 @@ export default function AnalyzePage() {
 
     // 优先使用 AI 生成的风格名称
     const title = result.analysis?.parsed?.style_name
-      ? result.analysis.parsed.style_name.trim()
+      ? (result.analysis.parsed.style_name || "").trim()
       : (result.analysis?.parsed?.project_name
-        ? result.analysis.parsed.project_name.trim()
+        ? (result.analysis.parsed.project_name || "").trim()
         : (result.analysis?.prompt?.style_name
           ? result.analysis.prompt.style_name.trim()
           : generateTitleFromAnalysis(result.analysis)));
 
     // 统一数据结构，确保与历史记录一致
-    const formattedAnalysis = result.analysis?.style ? result.analysis : {
+    const formattedAnalysis: any = result.analysis?.style ? result.analysis : {
       style: {
         composition: result.analysis.parsed?.composition || '',
         art_style: result.analysis.parsed?.art_style || '',
@@ -393,8 +393,8 @@ export default function AnalyzePage() {
         style_name: result.analysis.parsed?.style_name || result.analysis.parsed?.project_name || ''
       },
       metadata: {
-        model: result.analysis.model || '',
-        success: result.analysis.success || true
+        model: (result.analysis as any).model || '',
+        success: (result.analysis as any).success || true
       },
       parsed: result.analysis.parsed
     };
@@ -617,7 +617,7 @@ export default function AnalyzePage() {
                 <div className="bg-white rounded-3xl p-6 card-shadow">
                   <h3 className="font-headline font-bold text-xl mb-4">{t('analyze.analysisDetails')}</h3>
                   <div className="space-y-4 text-sm">
-                    {Object.entries(result.analysis.parsed).map(([key, value]) => {
+                    {Object.entries(result.analysis.parsed || {}).map(([key, value]) => {
                       if (!value) return null;
                       return (
                         <div key={key}>
