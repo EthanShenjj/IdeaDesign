@@ -17,6 +17,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUploadUrl, setImageUploadUrl] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<ModelConfig | null>(null);
   const [availableModels, setAvailableModels] = useState<ModelConfig[]>([]);
@@ -51,8 +52,61 @@ export default function HomePage() {
       if (enabledModels.length > 0 && !selectedModel) {
         setSelectedModel(enabledModels[0]);
       }
+    } else {
+      // 初始化默认模型
+      const defaultModels = [
+        {
+          id: '1',
+          name: 'gpt-4o',
+          displayName: 'GPT-4o (OpenAI)',
+          apiKey: '',
+          baseUrl: 'https://api.openai.com/v1',
+          enabled: true
+        }
+      ];
+      localStorage.setItem('ai_models', JSON.stringify(defaultModels));
+      setAvailableModels([]);
     }
-  }, []); // 只在组件挂载时运行一次
+  }, [selectedModel]);
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    
+    // 1. 优先检查是否是图片文件
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          setImageFile(file);
+          setImageUploadUrl('');
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setImagePreview(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+          showToast(t('common.success') || '图片已粘贴', 'success');
+          return;
+        }
+      }
+    }
+
+    // 2. 检查是否是 URL（支持图片链接 + 网页链接）
+    const pastedText = e.clipboardData.getData('text')?.trim();
+    if (pastedText && (pastedText.startsWith('http://') || pastedText.startsWith('https://') || pastedText.startsWith('data:image'))) {
+      e.preventDefault(); // 阻止文字粘贴到输入框，URL 不放入 searchQuery
+      const isImageUrl = /\.(jpeg|jpg|gif|png|webp|avif|svg|bmp|ico)(\?.*)?$/i.test(pastedText);
+      setImageUploadUrl(pastedText);  // 统一存入 imageUploadUrl
+      setImageFile(null);
+      if (isImageUrl || pastedText.startsWith('data:image')) {
+        setImagePreview(pastedText);
+        showToast(t('common.success') || '图片链接已识别，点击分析', 'success');
+      } else {
+        // 网页链接，显示 URL 来源卡片，不放入 searchQuery
+        setImagePreview('');
+        showToast('网页链接已识别 ✓ 点击「分析」将自动截图并解构设计风格', 'success');
+      }
+    }
+  };
 
   const loadAssets = useCallback(async (pageNum: number) => {
     if (loadingRef.current || !hasMoreRef.current) return;
@@ -179,6 +233,7 @@ export default function HomePage() {
 
   const clearImage = () => {
     setImageFile(null);
+    setImageUploadUrl('');
     setImagePreview('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -186,34 +241,44 @@ export default function HomePage() {
   };
 
   const handleAnalyze = async () => {
-    if (!imageFile && !searchQuery) return;
+    // 优先判断：有图片文件或 URL（含网页 URL）时走图片分析
+    const hasImage = !!imageFile || !!imageUploadUrl;
+    const hasText = !!searchQuery.trim();
+
+    if (!hasImage && !hasText) return;
     
-    if (imageFile && !selectedModel) {
+    if (hasImage && !selectedModel) {
       showToast(t('analyze.configureModel'), 'error');
       return;
     }
 
     setIsAnalyzing(true);
 
-    if (imageFile) {
+    if (hasImage) {
       // 如果有图片，执行实际分析
       try {
-        // 1. 提取颜色
-        const colorData = await extractColors(imageFile);
-        
-        if (!colorData.success) {
-          throw new Error('Color extraction failed');
+        // 1. 提取颜色 (如果是 URL，后端也支持提取吗？目前 extractColors 只支持 File，我们稍后检查)
+        // 为了简单起见，如果只有 URL，跳过颜色提取或让后端处理
+        let colors: any[] = [];
+        if (imageFile) {
+          try {
+            const colorData = await extractColors(imageFile);
+            if (colorData.success) colors = colorData.colors;
+          } catch (e) {
+            console.warn('Color extraction failed, continuing with analysis');
+          }
         }
 
         // 2. 分析风格
-        const analysisData = await analyzeImageFromAPI(imageFile, null, selectedModel!);
+        const analysisData = await analyzeImageFromAPI(imageFile, imageUploadUrl, selectedModel!);
         
         if (!analysisData.success) {
           throw new Error('Analysis failed');
         }
 
-        // 3. 生成 Prompt
-        const prompt = generatePromptFromAnalysis(analysisData.analysis, colorData.colors);
+        // 3. 生成 Prompt (使用图片分析结果中的颜色，如果本地没提取到)
+        const finalColors = colors.length > 0 ? colors : (analysisData.analysis?.parsed?.color_classification ? Object.values(analysisData.analysis.parsed.color_classification).map(hex => ({ hex })) : []);
+        const prompt = generatePromptFromAnalysis(analysisData.analysis, finalColors);
         const tags = extractTags(analysisData.analysis);
 
         // 从 AI 分析结果中提取标题
@@ -222,6 +287,7 @@ export default function HomePage() {
           || `Analysis ${new Date().toLocaleDateString()}`;
 
         // 保存结果到 sessionStorage 和后端历史记录
+        const resultImageUrl = imagePreview || analysisData.image_url || imageUploadUrl || '';
         const resultData = {
           id: Date.now().toString(),
           title: styleTitle,
@@ -231,12 +297,23 @@ export default function HomePage() {
             hour: '2-digit', 
             minute: '2-digit' 
           }),
-          imageUrl: imagePreview,
+          imageUrl: resultImageUrl,
           tags,
-          colors: colorData.colors,
+          colors: finalColors,
           prompt,
-          analysis: analysisData.analysis
+          analysis: {
+            ...analysisData.analysis,
+            source_url: analysisData.source_url || (imageUploadUrl.startsWith('http') && !imageUploadUrl.startsWith('http') ? imageUploadUrl : null) // backend actually passes it but let's just make sure. Wait, imageUploadUrl IS the webpage URL usually.
+          }
         };
+
+        // Ensure we properly inject source_url to analysis object
+        if (analysisData.source_url) {
+          resultData.analysis.source_url = analysisData.source_url;
+        } else if (imageUploadUrl && !imageUploadUrl.startsWith('data:')) {
+          resultData.analysis.source_url = imageUploadUrl;
+        }
+
         
         // 自动保存到后端历史记录
         try {
@@ -370,6 +447,28 @@ export default function HomePage() {
               </div>
             )}
 
+            {/* Webpage URL Preview Card */}
+            {imageUploadUrl && !imagePreview && (
+              <div className="mb-4 relative flex items-center gap-3 bg-accent/10 border border-accent/30 rounded-2xl px-5 py-4">
+                <div className="flex-shrink-0 w-9 h-9 bg-accent/20 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-ink/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-ink/50 uppercase tracking-wider mb-0.5">网页截图分析</p>
+                  <p className="text-sm font-mono text-ink/70 truncate">{imageUploadUrl}</p>
+                  <p className="text-xs text-ink/40 mt-0.5">点击「分析」将自动截图并解构设计风格</p>
+                </div>
+                <button
+                  onClick={clearImage}
+                  className="flex-shrink-0 bg-white/80 p-2 rounded-full hover:bg-white transition-all"
+                >
+                  <X className="w-4 h-4 text-ink/50" />
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center bg-canvas rounded-3xl p-2 focus-within:ring-2 focus-within:ring-accent transition-all">
               <div className="flex-1 flex items-center px-4 py-3">
                 <button
@@ -392,15 +491,20 @@ export default function HomePage() {
                 <input 
                   type="text" 
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('home.placeholder') || 'Visual Decipher'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // 如果新值看起来是被粘贴的 URL，不写入 searchQuery（由 handlePaste 处理）
+                    if (val.startsWith('http://') || val.startsWith('https://')) return;
+                    setSearchQuery(val);
+                  }}
+                  onPaste={handlePaste}
+                  placeholder={imageFile || imageUploadUrl || searchQuery ? '' : (t('home.placeholder') || 'Visual Decipher')}
                   className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-2xl font-handwriting text-ink/60 placeholder:text-ink/20"
-                  disabled={!!imageFile}
                 />
               </div>
               <button 
                 onClick={handleAnalyze}
-                disabled={isAnalyzing || (!imageFile && !searchQuery)}
+                disabled={isAnalyzing || (!imageFile && !imageUploadUrl && !searchQuery)}
                 className="bg-accent text-ink px-8 py-4 rounded-full font-headline font-bold text-sm hover:brightness-105 transition-all flex items-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>{isAnalyzing ? (t('home.analyzing') || '分析中') : (t('home.analyzeButton') || '分析')}</span>

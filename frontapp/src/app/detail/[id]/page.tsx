@@ -450,6 +450,27 @@ export default function DetailPage() {
               />
               
               <div className="p-5">
+                {result.analysis?.source_url && (
+                  <a 
+                    href={result.analysis.source_url as string} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 mb-4 w-full bg-accent/5 hover:bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 transition-colors group"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-ink/50 uppercase mb-0.5">来源网页</p>
+                      <p className="text-sm text-ink truncate group-hover:text-accent transition-colors">
+                        {result.analysis.source_url as string}
+                      </p>
+                    </div>
+                  </a>
+                )}
+
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-xs text-ink/40">{t('detail.original')}</span>
                   <span className="text-xs text-ink/40">{t('detail.handPickedStyle')}</span>

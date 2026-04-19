@@ -152,6 +152,7 @@ export const translations = {
       languageChinese: '大模型将使用中文输出分析结果',
       languageEnglish: 'AI will output analysis in English',
       currentLanguage: '当前系统语言',
+      quickPick: '快速选择预设',
     },
     compare: {
       title: '模型对比',
@@ -351,6 +352,7 @@ export const translations = {
       languageChinese: 'AI will output analysis in Chinese',
       languageEnglish: 'AI will output analysis in English',
       currentLanguage: 'Current system language',
+      quickPick: 'Quick Pick Presets',
     },
     compare: {
       title: 'Model Comparison',

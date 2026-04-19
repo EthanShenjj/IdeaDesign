@@ -17,6 +17,7 @@ import requests
 from utils.color_extractor import extract_colors_from_image
 from utils.vision_analyzer import analyze_image_style
 from utils.prompt_generator import generate_prompt_from_analysis
+from utils.web_screenshot import capture_webpage_screenshot
 from database import get_database_manager
 from database.auth_manager import AuthManager
 
@@ -143,9 +144,82 @@ def analyze_image():
             else:
                 return jsonify({'error': 'Invalid file type'}), 400
         elif image_url:
-            print(f"[DEBUG] Using image URL: {image_url}")
-            # 使用 URL
-            pass
+            original_image_url = image_url
+            print(f"[DEBUG] Processing image URL: {image_url}")
+            try:
+                # 尝试从 URL 下载图片
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+                }
+                
+                # 设置超时，防止挂起
+                resp = requests.get(image_url, headers=headers, timeout=15)
+                
+                if resp.status_code != 200:
+                    return jsonify({'error': f'Failed to download image from URL: {resp.status_code}'}), 400
+                
+                content_type = resp.headers.get('Content-Type', '')
+                print(f"[DEBUG] URL Content-Type: {content_type}")
+
+                # 验证是否为图片内容或是 HTML
+                if 'text/html' in content_type:
+                    # 网页 URL：使用 Playwright 截图
+                    print(f"[DEBUG] URL is a webpage, taking screenshot...")
+                    screenshot_data, screenshot_err = capture_webpage_screenshot(image_url)
+                    if screenshot_err:
+                        print(f"[ERROR] Screenshot failed: {screenshot_err}")
+                        return jsonify({'error': f'网页截图失败: {screenshot_err}'}), 400
+                    image_data = screenshot_data
+                    image_url = None  # 改为使用截图的 base64 数据
+                    print(f"[DEBUG] Webpage screenshot captured successfully")
+                else:
+                    # 直接图片 URL：使用 PIL 验证并处理
+                    try:
+                        img = Image.open(BytesIO(resp.content))
+                        
+                        # 同样的优化处理
+                        if img.mode in ('RGBA', 'LA', 'P'):
+                            background = Image.new('RGB', img.size, (255, 255, 255))
+                            if img.mode == 'P':
+                                img = img.convert('RGBA')
+                            mask = img.split()[-1] if img.mode in ('RGBA', 'LA') else None
+                            background.paste(img, mask=mask)
+                            img = background
+                        elif img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        
+                        max_size = 1024
+                        if max(img.size) > max_size:
+                            ratio = max_size / max(img.size)
+                            new_size = tuple(int(dim * ratio) for dim in img.size)
+                            img = img.resize(new_size, Image.Resampling.LANCZOS)
+                        
+                        buffer = BytesIO()
+                        img.save(buffer, format='JPEG', quality=85, optimize=True)
+                        buffer.seek(0)
+                        image_data = base64.b64encode(buffer.read()).decode('utf-8')
+                        image_url = None # 改为使用 image_data
+                        
+                    except Exception as img_err:
+                        print(f"[ERROR] PIL failed to open image from URL: {str(img_err)}")
+                        return jsonify({'error': 'The content at this URL is not a valid image format.'}), 400
+                    
+            except requests.exceptions.RequestException as req_err:
+                print(f"[ERROR] Request failed for URL: {str(req_err)}")
+                return jsonify({'error': f'Could not reach the image URL: {str(req_err)}'}), 400
+                
+            # 将下载或截图得到的 base64 保存为文件，以便前端展示
+            if image_data:
+                import uuid
+                filename = secure_filename(f"url_{int(datetime.now().timestamp())}_{uuid.uuid4().hex[:6]}.jpg")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                try:
+                    with open(filepath, "wb") as fh:
+                        fh.write(base64.b64decode(image_data))
+                    saved_image_url = f"/api/uploads/{filename}"
+                except Exception as e:
+                    print(f"[ERROR] Failed to save URL image to disk: {e}")
         else:
             return jsonify({'error': 'No image provided'}), 400
         
@@ -173,8 +247,9 @@ def analyze_image():
         # 如果是上传的文件，返回文件路径
         if 'image' in request.files and filepath:
             response_data['image_url'] = f"/api/uploads/{filename}"
-        elif image_url:
-            response_data['image_url'] = image_url
+        elif 'original_image_url' in locals() and original_image_url:
+            response_data['image_url'] = saved_image_url if 'saved_image_url' in locals() else original_image_url
+            response_data['source_url'] = original_image_url
         
         return jsonify(response_data)
         

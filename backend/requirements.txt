@@ -4,6 +4,7 @@ Pillow==10.1.0
 extcolors==1.0.0
 requests==2.31.0
 python-dotenv==1.0.0
+playwright>=1.40.0
 
 # 数据库驱动（根据需要选择）
 # SQLite (默认，无需额外安装)
