@@ -479,7 +479,9 @@ def manage_history():
                     return jsonify({'error': 'History not found'}), 404
             
             # 否则返回所有历史记录
+            print(f"📊 Querying history from DB... (tag={tag}, search={search})")
             history = db.get_history(tag=tag, search=search, limit=limit)
+            print(f"✓ History fetched: {len(history)} items")
             return jsonify({
                 'success': True,
                 'history': history,
@@ -740,12 +742,17 @@ def get_designs():
     """获取所有设计灵感"""
     try:
         data_path = os.path.join(os.path.dirname(__file__), 'data_assets', 'designs.json')
+        print(f"📂 Attempting to read designs from: {data_path}")
+        
         if not os.path.exists(data_path):
+            print(f"✗ Designs file NOT FOUND at: {data_path}")
             return jsonify({'error': 'Designs data not found'}), 404
         
         import json
         with open(data_path, 'r', encoding='utf-8') as f:
+            print("📖 Reading JSON file...")
             designs = json.load(f)
+            print(f"✓ JSON loaded: {len(designs)} designs")
             
         # 支持分页和搜索
         search = request.args.get('search', '').lower()
