@@ -180,7 +180,7 @@ export async function getAssets(filters?: {
   if (filters?.color) params.append('color', filters.color);
   if (filters?.limit) params.append('limit', filters.limit.toString());
 
-  const response = await fetchWithTimeout(`${API_BASE_URL}/api/assets?${params}`, { timeout: 10000 });
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/assets?${params}`, { timeout: 30000 });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch assets: ${response.statusText}`);
@@ -193,7 +193,7 @@ export async function getAssets(filters?: {
  * 根据 ID 获取单个素材/分析结果
  */
 export async function getAssetById(assetId: string): Promise<{ success: boolean; asset: Asset }> {
-  const response = await fetchWithTimeout(`${API_BASE_URL}/api/assets?id=${assetId}`, { timeout: 10000 });
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/assets?id=${assetId}`, { timeout: 30000 });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch asset: ${response.statusText}`);
@@ -287,7 +287,7 @@ export async function getHistory(filters?: {
   if (filters?.limit) params.append('limit', filters.limit.toString());
   if (filters?.id) params.append('id', filters.id);
 
-  const response = await fetchWithTimeout(`${API_BASE_URL}/api/history?${params}`, { timeout: 10000 });
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/history?${params}`, { timeout: 30000 });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch history: ${response.statusText}`);
@@ -442,7 +442,7 @@ export async function getDesigns(filters?: {
   if (filters?.search) params.append('search', filters.search);
   if (filters?.category) params.append('category', filters.category);
 
-  const response = await fetchWithTimeout(`${API_BASE_URL}/api/designs?${params}`, { timeout: 10000 });
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/designs?${params}`, { timeout: 30000 });
   if (!response.ok) {
     throw new Error(`Failed to fetch designs: ${response.statusText}`);
   }
@@ -453,7 +453,7 @@ export async function getDesigns(filters?: {
  * 根据 slug 获取设计详情
  */
 export async function getDesignBySlug(slug: string): Promise<{ success: boolean; design: any }> {
-  const response = await fetchWithTimeout(`${API_BASE_URL}/api/designs/${slug}`, { timeout: 10000 });
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/designs/${slug}`, { timeout: 30000 });
   if (!response.ok) {
     throw new Error(`Failed to fetch design detail: ${response.statusText}`);
   }
