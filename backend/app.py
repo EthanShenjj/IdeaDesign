@@ -777,8 +777,9 @@ def get_designs():
 def get_design_by_slug(slug):
     """根据 slug 获取单个设计详情"""
     try:
-        data_path = os.path.join(os.path.dirname(__file__), 'data', 'designs.json')
+        data_path = os.path.join(os.path.dirname(__file__), 'data_assets', 'designs.json')
         if not os.path.exists(data_path):
+            print(f"✗ Design detail file NOT FOUND at: {data_path}")
             return jsonify({'error': 'Designs data not found'}), 404
             
         import json
