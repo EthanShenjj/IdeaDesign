@@ -1,3 +1,13 @@
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+function normalizeApiBase(url) {
+  if (!url) return 'http://localhost:5001/api';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `https://${url}`;
+}
+
+const API_BASE_URL = normalizeApiBase(RAW_API_URL).replace(/\/+$/, '');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -14,7 +24,7 @@ const nextConfig = {
     return [
       {
         source: '/api/backend/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/:path*',
+        destination: `${API_BASE_URL}/:path*`,
       },
     ];
   },
