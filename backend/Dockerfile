@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
 WORKDIR /app
 
 # 复制依赖文件
-COPY backend/requirements.txt .
+COPY requirements.txt .
 
 # 安装 Python 依赖
 RUN pip install --no-cache-dir -r requirements.txt
@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN playwright install chromium
 
 # 复制后端所有代码
-COPY backend/ ./
+COPY . ./
 
 # 创建上传文件夹和数据文件夹
 RUN mkdir -p uploads data
