@@ -739,7 +739,7 @@ def compare_models():
 def get_designs():
     """获取所有设计灵感"""
     try:
-        data_path = os.path.join(os.path.dirname(__file__), 'data', 'designs.json')
+        data_path = os.path.join(os.path.dirname(__file__), 'data_assets', 'designs.json')
         if not os.path.exists(data_path):
             return jsonify({'error': 'Designs data not found'}), 404
         
@@ -793,4 +793,5 @@ def get_design_by_slug(slug):
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5001))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    # 生产环境关闭 debug 模式
+    app.run(host='0.0.0.0', port=port, debug=False)
