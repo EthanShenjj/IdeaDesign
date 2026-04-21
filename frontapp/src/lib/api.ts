@@ -4,7 +4,9 @@
 
 import type { ColorData, AnalysisData, Asset, ModelConfig } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+// 归一化處理：去掉末尾的斜杠和 /api，因为后续请求会手动添加 /api
+const API_BASE_URL = RAW_API_URL.replace(/\/+$/, '').replace(/\/api$/, '');
 const DEFAULT_TIMEOUT = 60000; // 60 seconds
 
 /**
